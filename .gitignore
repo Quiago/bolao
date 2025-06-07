@@ -152,6 +152,7 @@ venv.bak/
 dmypy.json
 *.json
 *.ipynb
+*.csv
 
 # Pyre type checker
 .pyre/

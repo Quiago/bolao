@@ -1,0 +1,17 @@
+# Dependencias para búsqueda semántica con Pinecone y Gradio
+
+# Pinecone
+pinecone-client>=5.0.0
+
+# Embeddings
+sentence-transformers>=2.2.2
+
+# Data processing
+pandas>=2.0.0
+tqdm>=4.65.0
+
+# Web interface
+gradio>=4.0.0
+
+# Optional: Para mejor performance con Pinecone
+# pinecone[grpc]
