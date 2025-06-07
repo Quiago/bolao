@@ -1,8 +1,10 @@
 """
 Versión con diseño de tarjetas para la búsqueda semántica
+Incluye todos los filtros de la versión original
 """
 
 import gradio as gr
+import pandas as pd
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 import os
@@ -39,8 +41,13 @@ def load_resources():
     
     return model, index, config
 
-def search_products_cards(query: str, num_results: int = 12) -> Tuple[str, str]:
-    """Búsqueda que devuelve resultados en formato HTML cards"""
+def search_products_cards(
+    query: str, 
+    num_results: int = 12, 
+    filter_type: str = "", 
+    min_score: float = 0.0
+) -> Tuple[str, str]:
+    """Búsqueda que devuelve resultados en formato HTML cards con filtros"""
     try:
         model, index, config = load_resources()
         
@@ -49,21 +56,35 @@ def search_products_cards(query: str, num_results: int = 12) -> Tuple[str, str]:
         
         start_time = time.time()
         
-        # Buscar
+        # Generar embedding de la consulta
         query_vector = model.encode(query).tolist()
+        
+        # Construir filtro si se especifica
+        filter_dict = None
+        if filter_type and filter_type != "Todos":
+            filter_dict = {"type": {"$eq": filter_type}}
+        
+        # Realizar búsqueda
         results = index.query(
             vector=query_vector,
             top_k=num_results,
-            include_metadata=True
+            include_metadata=True,
+            filter=filter_dict
         )
         
         if not results['matches']:
-            return "<p style='text-align:center; color:#6b7280;'>No se encontraron productos</p>", ""
+            return "<p style='text-align:center; color:#6b7280; padding: 40px;'>No se encontraron productos</p>", ""
+        
+        # Filtrar por score mínimo
+        filtered_matches = [m for m in results['matches'] if m['score'] >= min_score]
+        
+        if not filtered_matches:
+            return f"<p style='text-align:center; color:#6b7280; padding: 40px;'>No se encontraron productos con score ≥ {min_score:.2f}</p>", ""
         
         # Crear HTML con cards
         cards_html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 16px;">'
         
-        for match in results['matches']:
+        for match in filtered_matches:
             m = match.get('metadata', {})
             score_color = "#10b981" if match['score'] > 0.8 else "#f59e0b" if match['score'] > 0.6 else "#6b7280"
             
@@ -74,7 +95,7 @@ def search_products_cards(query: str, num_results: int = 12) -> Tuple[str, str]:
                  onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'">
                 <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1f2937; 
                           overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    {m.get('product_name', 'Sin nombre')[:40]}
+                    {m.get('product_name', 'N/A')[:40]}
                 </h3>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
                     <span style="background: #eff6ff; color: #3b82f6; padding: 4px 8px; border-radius: 6px; 
@@ -83,9 +104,12 @@ def search_products_cards(query: str, num_results: int = 12) -> Tuple[str, str]:
                     </span>
                     <span style="background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 6px; 
                                 font-size: 12px; font-weight: 600;">
-                        ${m.get('product-price', 'N/A')}
+                        ${m.get('product_price', 'N/A')}
                     </span>
                 </div>
+                <p style="font-size: 13px; color: #4b5563; margin: 8px 0; line-height: 1.4;">
+                    🏪 {m.get('name', 'N/A')[:30]}
+                </p>
                 <div style="border-top: 1px solid #f3f4f6; padding-top: 8px; margin-top: auto;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 12px; color: #6b7280;">
@@ -104,15 +128,27 @@ def search_products_cards(query: str, num_results: int = 12) -> Tuple[str, str]:
         cards_html += '</div>'
         
         elapsed = time.time() - start_time
-        status = f"✨ {len(results['matches'])} productos encontrados en {elapsed:.1f}s"
+        status = f"✨ {len(filtered_matches)} productos encontrados en {elapsed:.1f}s"
         
         return cards_html, status
         
     except Exception as e:
-        return f"<p style='color: #ef4444;'>Error: {str(e)}</p>", ""
+        return f"<p style='color: #ef4444; text-align: center; padding: 40px;'>Error: {str(e)}</p>", ""
+
+def get_product_types():
+    """Obtiene los tipos de productos únicos del CSV"""
+    try:
+        df = pd.read_csv('product.csv')
+        types = ['Todos'] + sorted(df['type'].dropna().unique().tolist())
+        return types
+    except Exception:
+        return ['Todos']
 
 def create_cards_interface():
-    """Interfaz con diseño de tarjetas"""
+    """Interfaz con diseño de tarjetas y filtros completos"""
+    
+    # Cargar tipos de productos
+    product_types = get_product_types()
     
     css = """
     .gradio-container {
@@ -122,7 +158,7 @@ def create_cards_interface():
     }
     .search-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 40px 20px;
+        padding: 40px 20px 30px 20px;
         border-radius: 0 0 24px 24px;
         margin: -20px -20px 20px -20px;
     }
@@ -134,6 +170,26 @@ def create_cards_interface():
     }
     .gr-button-primary:hover {
         background: #f9fafb !important;
+    }
+    .filter-section {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 20px;
+    }
+    .gr-form {
+        background: transparent !important;
+    }
+    .gr-input-label {
+        color: white !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+    }
+    .gr-dropdown {
+        background: white !important;
+    }
+    .gr-slider .gr-slider-container {
+        background: rgba(255, 255, 255, 0.2) !important;
     }
     """
     
@@ -157,6 +213,32 @@ def create_cards_interface():
                     scale=5
                 )
                 btn = gr.Button("Buscar", size="lg", scale=1)
+            
+            # Filtros en un acordeón elegante
+            with gr.Accordion("⚙️ Filtros avanzados", open=False, elem_classes="filter-section"):
+                with gr.Row():
+                    num_results = gr.Slider(
+                        minimum=6,
+                        maximum=50,
+                        value=12,
+                        step=6,
+                        label="📊 Número de resultados",
+                        info="Cantidad de productos a mostrar"
+                    )
+                    filter_type = gr.Dropdown(
+                        choices=product_types,
+                        value="Todos",
+                        label="🏷️ Filtrar por tipo",
+                        info="Categoría de productos"
+                    )
+                    min_score = gr.Slider(
+                        minimum=0.0,
+                        maximum=1.0,
+                        value=0.0,
+                        step=0.05,
+                        label="📈 Score mínimo",
+                        info="Relevancia mínima (0-1)"
+                    )
         
         # Status
         status = gr.Markdown(elem_classes="status-text")
@@ -171,7 +253,9 @@ def create_cards_interface():
                     ["croissant de pistacho"],
                     ["chocolate premium"],
                     ["postre artesanal"],
-                    ["snack saludable"]
+                    ["snack saludable"],
+                    ["dulce tradicional"],
+                    ["regalo gourmet"]
                 ],
                 inputs=query,
                 examples_per_page=8,
@@ -181,12 +265,12 @@ def create_cards_interface():
         # Handlers
         btn.click(
             search_products_cards,
-            [query],
+            [query, num_results, filter_type, min_score],
             [results, status]
         )
         query.submit(
             search_products_cards,
-            [query],
+            [query, num_results, filter_type, min_score],
             [results, status]
         )
     
