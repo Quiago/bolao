@@ -153,6 +153,7 @@ dmypy.json
 *.json
 *.ipynb
 *.csv
+*.txt
 
 # Pyre type checker
 .pyre/

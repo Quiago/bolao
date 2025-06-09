@@ -11,6 +11,7 @@ import os
 import json
 from typing import Tuple
 import time
+from feedback import send_feedback_email
 
 # Configuración
 PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
@@ -251,6 +252,34 @@ def get_locations():
     except Exception:
         return ['Todas']
 
+def open_google_forms():
+    """
+    Abre Google Forms en nueva pestaña
+    Reemplaza 'TU_GOOGLE_FORM_URL' con tu URL real de Google Forms
+    """
+    # Para crear tu Google Form:
+    # 1. Ve a forms.google.com
+    # 2. Crea un nuevo formulario
+    # 3. Añade preguntas como:
+    #    - Calificación general (escala 1-5)
+    #    - ¿Qué te gustó más?
+    #    - ¿Qué podríamos mejorar?
+    #    - ¿Recomendarías BOLAO?
+    #    - Comentarios adicionales
+    # 4. En "Enviar", copia el enlace
+    # 5. Reemplaza la URL abajo
+    
+    google_form_url = "https://forms.gle/TU_GOOGLE_FORM_ID"  # Reemplazar con tu URL
+    
+    return f"""
+    <script>
+        window.open('{google_form_url}', '_blank');
+    </script>
+    <p style='color: #10b981; text-align: center;'>
+        📝 Formulario de feedback abierto en nueva pestaña
+    </p>
+    """
+
 def create_cards_interface():
     """Interfaz con diseño de tarjetas y filtros completos"""
     
@@ -266,9 +295,9 @@ def create_cards_interface():
     }
     .search-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 30px 20px;
+        padding: 20px 20px;
         border-radius: 0 0 24px 24px;
-        margin: -20px -20px 20px -20px;
+        margin: -20px -20px 15px -20px;
     }
     .gr-button-primary {
         background: white !important;
@@ -295,11 +324,11 @@ def create_cards_interface():
     .filter-section {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        padding: 20px;
-        margin-top: 15px;
-        margin-bottom: 20px;
+        padding: 15px;
+        margin-top: 10px;
+        margin-bottom: 15px;
         backdrop-filter: blur(10px);
-        min-height: 180px;
+        min-height: 140px;
     }
     .gr-form {
         background: transparent !important;
@@ -363,23 +392,51 @@ def create_cards_interface():
         }
     }
     
-    /* Botones más compactos */
-    .button-row {
-        gap: 10px !important;
+    /* Estilos para diseño compacto */
+    .compact-feedback {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        padding: 15px !important;
+        margin: 10px 0 !important;
+    }
+    
+    .compact-examples {
+        margin: 10px 0 !important;
+    }
+    
+    /* Layout responsivo mejorado */
+    @media (max-width: 768px) {
+        .gradio-container {
+            max-width: 100% !important;
+            padding: 0 10px !important;
+        }
+        .search-container {
+            padding: 15px 10px !important;
+            margin: -10px -10px 10px -10px !important;
+        }
+        .filter-section {
+            padding: 10px !important;
+            margin-top: 5px !important;
+            min-height: 120px !important;
+        }
+        .gr-input-label {
+            font-size: 12px !important;
+        }
     }
     """
     
     with gr.Blocks(css=css, theme=gr.themes.Soft()) as app:
-        # Header con gradiente
+        # Header con gradiente (más compacto)
         with gr.Column(elem_classes="search-container"):
             gr.Markdown(
-                """<h1 style='text-align: center; color: white; margin: 0 0 8px 0; 
-                             font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                """<h1 style='text-align: center; color: white; margin: 0 0 5px 0; 
+                             font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
                     🔍 BOLAO
                 </h1>
-                <p style='text-align: center; color: rgba(255,255,255,0.9); margin: 0 0 20px 0; 
-                         font-size: 16px; font-weight: 400;'>
-                    Encuentra productos al instante con nuestra búsqueda inteligente y filtros avanzados
+                <p style='text-align: center; color: rgba(255,255,255,0.9); margin: 0 0 15px 0; 
+                         font-size: 14px; font-weight: 400;'>
+                    Encuentra productos al instante con filtros personalizados
                 </p>""",
                 elem_classes="header"
             )
@@ -394,6 +451,16 @@ def create_cards_interface():
                 )
                 btn = gr.Button("🔍 Buscar", size="lg", scale=1)
                 clear_btn = gr.Button("🗑️ Limpiar", variant="secondary", size="lg", scale=1)
+            
+            # Tips rápidos siempre visibles (más compactos)
+            gr.Markdown("""
+            <div style='background: rgba(255,255,255,0.15); border-radius: 8px; padding: 8px; margin: 10px 0 5px 0;'>
+                <div style='color: white; font-size: 12px; line-height: 1.3; text-align: center;'>
+                    💡 <strong>Tips:</strong> 
+                    Escribe naturalmente • Usa filtros para refinar • Verde = muy relevante
+                </div>
+            </div>
+            """)
             
             # Filtros compactos en acordeón
             with gr.Accordion("⚙️ Filtros avanzados", open=False, elem_classes="filter-section"):
@@ -416,10 +483,7 @@ def create_cards_interface():
                         container=True
                     )
                 
-                # Espaciador pequeño
-                gr.HTML("<div style='height: 10px;'></div>")
-                
-                # Sliders en una fila
+                # Sliders en una fila (más compactos)
                 with gr.Row():
                     with gr.Column(scale=1):
                         num_results = gr.Slider(
@@ -427,8 +491,8 @@ def create_cards_interface():
                             maximum=50,
                             value=12,
                             step=6,
-                            label="📊 Cantidad de resultados",
-                            info="Número de productos a mostrar"
+                            label="📊 Cantidad",
+                            info="Núm. productos"
                         )
                     with gr.Column(scale=1):
                         min_score = gr.Slider(
@@ -436,49 +500,84 @@ def create_cards_interface():
                             maximum=1.0,
                             value=0.0,
                             step=0.05,
-                            label="📈 Relevancia mínima",
-                            info="Score de similitud (0-100%)"
+                            label="📈 Relevancia",
+                            info="Score mínimo"
                         )
+        
+        # Layout en dos columnas para que todo quepa en la primera pantalla
+        with gr.Row():
+            # Columna izquierda: Ejemplos
+            with gr.Column(scale=1):
+                gr.Examples(
+                    [
+                        ["croissant de pistacho"],
+                        ["chocolate premium"],
+                        ["postre sin gluten"],
+                        ["snack saludable"],
+                        ["dulce tradicional"],
+                        ["café especial"]
+                    ],
+                    inputs=query,
+                    examples_per_page=6,
+                    label="💡 Prueba buscar:"
+                )
+            
+            # Información adicional compacta
+            with gr.Column(scale=1):
+                gr.Markdown("""
+                ℹ️ Guía de uso
+                **🔍 Búsqueda inteligente:**
+                Escribe naturalmente y baje en la pantalla para ver los resultados.
+
+                **⚙️ Filtros:** Combina tipo, ubicación, cantidad y relevancia para refinar resultados.
+
+                **📊 Relevancia:** Verde (>80%) = muy relevante, Amarillo (60-80%) = relevante, Gris (<60%) = menos relevante.
+
+                **🔗 Tarjetas:** Muestran precio, establecimiento, dirección y redes sociales cuando están disponibles.
+                """)
+            
+            # Columna derecha: Feedback compacto
+            with gr.Column(scale=1):
+                gr.Markdown("""
+                <div style='background: #f8fafc; border-radius: 8px; padding: 15px; border: 1px solid #e2e8f0;'>
+                    <h4 style='color: #374151; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;'>
+                        💬 ¿Cómo vamos?
+                    </h4>
+                    <p style='color: #6b7280; margin: 0 0 10px 0; font-size: 13px;'>
+                        Tu feedback nos ayuda a mejorar
+                    </p>
+                </div>
+                """)
+                
+                rating = gr.Radio(
+                    choices=["⭐ Malo", "⭐⭐ Regular", "⭐⭐⭐ Bueno", "⭐⭐⭐⭐ Muy bueno", "⭐⭐⭐⭐⭐ Excelente"],
+                    label="🌟 Califica:",
+                    value=None
+                )
+                
+                quick_feedback = gr.Textbox(
+                    placeholder="Comentario breve...",
+                    label="💭 Comentario:",
+                    lines=1,
+                    max_lines=2
+                )
+                
+                with gr.Row():
+                    submit_feedback_btn = gr.Button("📤 Enviar", variant="primary", size="sm")
+                    feedback_btn = gr.Button("📝 Más info", variant="secondary", size="sm")
+        
+        feedback_status = gr.Markdown("", elem_classes="status-text")
         
         # Status
         status = gr.Markdown(elem_classes="status-text")
         
         # Resultados en cards
-        results = gr.HTML(label="", show_label=False)
-        
-        # Sugerencias compactas
-        with gr.Row():
-            gr.Examples(
-                [
-                    ["croissant de pistacho"],
-                    ["chocolate premium"],
-                    ["postre sin gluten"],
-                    ["snack saludable"],
-                    ["dulce tradicional"],
-                    ["café especial"]
-                ],
-                inputs=query,
-                examples_per_page=6,
-                label="💡 Prueba buscar:"
-            )
-        
-        # Información adicional compacta
-        with gr.Accordion("ℹ️ Guía de uso", open=False):
-            gr.Markdown("""
-            **🔍 Búsqueda inteligente:**
-            Escribe naturalmente - la IA entiende sinónimos y términos relacionados.
-            
-            **⚙️ Filtros:** Combina tipo, ubicación, cantidad y relevancia para refinar resultados.
-            
-            **📊 Relevancia:** Verde (>80%) = muy relevante, Amarillo (60-80%) = relevante, Gris (<60%) = menos relevante.
-            
-            **🔗 Tarjetas:** Muestran precio, establecimiento, dirección y redes sociales cuando están disponibles.
-            """)
-        
+        results = gr.HTML(label="", show_label=False)      
         # Footer compacto
         gr.Markdown("""
-        <div style='text-align: center; color: #9ca3af; font-size: 11px; margin-top: 20px; padding: 15px;'>
-            🤖 Búsqueda inteligente powered by AI
+        <div style='text-align: center; color: #9ca3af; font-size: 10px; margin-top: 20px; padding: 10px; 
+                    border-top: 1px solid #e5e7eb;'>
+            🤖 BOLAO - Búsqueda inteligente powered by AI
         </div>
         """)
         
@@ -497,6 +596,13 @@ def create_cards_interface():
                 "🔄 Filtros limpiados. ¡Haz una nueva búsqueda!"  # status
             )
         
+        def handle_feedback(rating, comment):
+            result = send_feedback_email(rating or "", comment or "")
+            return result, "", None  # status, limpiar comment, limpiar rating
+        
+        def handle_google_forms():
+            return open_google_forms()
+        
         # Eventos de búsqueda
         btn.click(
             search_handler,
@@ -513,6 +619,18 @@ def create_cards_interface():
         clear_btn.click(
             clear_filters,
             outputs=[filter_type, filter_location, num_results, min_score, results, status]
+        )
+        
+        # Eventos de feedback
+        submit_feedback_btn.click(
+            handle_feedback,
+            inputs=[rating, quick_feedback],
+            outputs=[feedback_status, quick_feedback, rating]
+        )
+        
+        feedback_btn.click(
+            handle_google_forms,
+            outputs=[feedback_status]
         )
     
     return app
