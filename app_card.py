@@ -641,8 +641,8 @@ if __name__ == "__main__":
         load_resources()
         app = create_cards_interface()
         app.launch(
-            server_name="0.0.0.0",
-            server_port=int(os.getenv("PORT", 7860)),
+            server_name=os.getenv("GRADIO_SERVER_NAME", "0.0.0.0"),
+            server_port=int(os.getenv("GRADIO_SERVER_PORT", 10000)),
             share=False,
             show_error=True
         )
