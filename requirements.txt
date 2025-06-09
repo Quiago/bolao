@@ -12,6 +12,7 @@ tqdm>=4.65.0
 
 # Web interface
 gradio>=4.0.0
+fastapi>=0.115.0
 
 # Optional: Para mejor performance con Pinecone
 # pinecone[grpc]

@@ -1,6 +1,7 @@
 """
 Versión con diseño de tarjetas para la búsqueda semántica
 Incluye filtros por tipo y location, muestra dirección y redes sociales
+Integrado con FastAPI para servir la aplicación
 """
 
 import gradio as gr
@@ -12,9 +13,11 @@ import json
 from typing import Tuple
 import time
 from feedback import send_feedback_email
+from fastapi import FastAPI
 
 # Configuración
 PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+CUSTOM_PATH = "/bolao"  # Path personalizado para Gradio
 
 # Variables globales
 model = None
@@ -635,18 +638,41 @@ def create_cards_interface():
     
     return app
 
+# Crear la aplicación FastAPI
+app = FastAPI()
+
+# Endpoint raíz de FastAPI
+@app.get("/")
+def read_main():
+    return {
+        "message": "API BOLAO - Búsqueda Inteligente de Productos",
+        "endpoints": {
+            "api": "/",
+            "gradio_app": CUSTOM_PATH,
+            "docs": "/docs"
+        }
+    }
+
+# Endpoint de salud
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "BOLAO Search API"}
+
+# Crear la interfaz de Gradio
+io = create_cards_interface()
+
+# Montar la aplicación Gradio en FastAPI
+app = gr.mount_gradio_app(app, io, path=CUSTOM_PATH)
+
+# Para ejecutar:
+# uvicorn app:app --reload
+# O si tu archivo se llama diferente:
+# uvicorn nombre_archivo:app --reload
+
 if __name__ == "__main__":
-    print("🚀 Iniciando búsqueda inteligente con filtros avanzados...")
-    try:
-        load_resources()
-        app = create_cards_interface()
-        app.launch(
-            server_name=os.getenv("GRADIO_SERVER_NAME", "0.0.0.0"),
-            server_port=int(os.getenv("GRADIO_SERVER_PORT", 10000)),
-            share=False,
-            show_error=True
-        )
-    except Exception as e:
-        print(f"❌ Error al iniciar la aplicación: {e}")
-        import traceback
-        traceback.print_exc()
+    import uvicorn
+    print("🚀 Iniciando servidor FastAPI con BOLAO...")
+    print("📍 API disponible en: http://localhost:8000")
+    print(f"🔍 Aplicación BOLAO en: http://localhost:8000{CUSTOM_PATH}")
+    print("📚 Documentación API en: http://localhost:8000/docs")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

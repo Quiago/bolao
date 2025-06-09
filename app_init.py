@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 import os
 import json
-from typing import List, Dict, Tuple
+from typing import Tuple
 import time
 
 # Configuración
@@ -122,7 +122,7 @@ def get_product_types():
         df = pd.read_csv('product.csv')
         types = ['Todos'] + sorted(df['type'].dropna().unique().tolist())
         return types
-    except:
+    except Exception:
         return ['Todos']
 
 def create_interface():
