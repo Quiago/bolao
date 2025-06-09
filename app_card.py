@@ -337,11 +337,11 @@ def create_cards_interface():
             gr.Markdown(
                 """<h1 style='text-align: center; color: white; margin: 0 0 8px 0; 
                              font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-                    🔍 Bolao
+                    🔍 BOLAO APP
                 </h1>
                 <p style='text-align: center; color: rgba(255,255,255,0.9); margin: 0 0 20px 0; 
                          font-size: 16px; font-weight: 400;'>
-                    Encuentra productos al instante con nuestra búsqueda inteligente y filtros avanzados
+                    Encuentra productos al instante con nuestra búsqueda inteligente
                 </p>""",
                 elem_classes="header"
             )
@@ -356,41 +356,63 @@ def create_cards_interface():
                 )
                 btn = gr.Button("🔍 Buscar", size="lg", scale=1)
             
-            # Filtros en un acordeón elegante
+            # Filtros en un acordeón elegante con más espacio
             with gr.Accordion("⚙️ Filtros avanzados", open=False, elem_classes="filter-section"):
-                # Primera fila: Dropdowns (van arriba para que se vean bien)
-                with gr.Row():
-                    filter_type = gr.Dropdown(
-                        choices=product_types,
-                        value="Todos",
-                        label="🏷️ Tipo de producto",
-                        info="Filtrar por categoría"
-                    )
-                    filter_location = gr.Dropdown(
-                        choices=locations,
-                        value="Todas",
-                        label="📍 Ubicación",
-                        info="Filtrar por ciudad/zona"
-                    )
+                # Primera fila: Dropdowns con mucho espacio
+                with gr.Row(elem_classes="dropdown-row"):
+                    with gr.Column():
+                        filter_type = gr.Dropdown(
+                            choices=product_types,
+                            value="Todos",
+                            label="🏷️ Tipo de producto",
+                            info="Filtrar por categoría"
+                        )
+                    with gr.Column():
+                        filter_location = gr.Dropdown(
+                            choices=locations,
+                            value="Todas",
+                            label="📍 Ubicación",
+                            info="Filtrar por ciudad/zona"
+                        )
                 
-                # Segunda fila: Sliders (van abajo)
+                # Espaciador visual
+                gr.HTML("<div style='height: 20px;'></div>")
+                
+                # Botón para limpiar filtros
                 with gr.Row():
-                    num_results = gr.Slider(
-                        minimum=6,
-                        maximum=50,
-                        value=12,
-                        step=6,
-                        label="📊 Cantidad de resultados",
-                        info="Número de productos a mostrar"
-                    )
-                    min_score = gr.Slider(
-                        minimum=0.0,
-                        maximum=1.0,
-                        value=0.0,
-                        step=0.05,
-                        label="📈 Relevancia mínima",
-                        info="Score de similitud (0-100%)"
-                    )
+                    with gr.Column(scale=2):
+                        gr.HTML("")  # Espaciador
+                    with gr.Column(scale=1):
+                        clear_btn = gr.Button("🗑️ Limpiar filtros", variant="secondary", size="sm")
+                    with gr.Column(scale=2):
+                        gr.HTML("")  # Espaciador
+                
+                # Espaciador visual
+                gr.HTML("<div style='height: 10px;'></div>")
+                
+                # Segunda fila: Sliders con separación
+                with gr.Row(elem_classes="slider-row"):
+                    with gr.Column():
+                        num_results = gr.Slider(
+                            minimum=6,
+                            maximum=50,
+                            value=12,
+                            step=6,
+                            label="📊 Cantidad de resultados",
+                            info="Número de productos a mostrar"
+                        )
+                    with gr.Column():
+                        min_score = gr.Slider(
+                            minimum=0.0,
+                            maximum=1.0,
+                            value=0.0,
+                            step=0.05,
+                            label="📈 Relevancia mínima",
+                            info="Score de similitud (0-100%)"
+                        )
+        
+        # Espacio adicional después de filtros
+        gr.HTML("<div style='height: 30px;'></div>")
         
         # Status
         status = gr.Markdown(elem_classes="status-text")
@@ -451,6 +473,16 @@ def create_cards_interface():
             print(f"🔍 Búsqueda: '{query}' | Tipo: '{filter_type}' | Ubicación: '{filter_location}' | Cantidad: {num_results} | Score: {min_score}")
             return search_products_cards(query, num_results, filter_type, filter_location, min_score)
         
+        def clear_filters():
+            return (
+                12,  # num_results
+                "Todos",  # filter_type
+                "Todas",  # filter_location
+                0.0,  # min_score
+                "",  # results
+                "🔄 Filtros limpiados. ¡Haz una nueva búsqueda!"  # status
+            )
+        
         # Eventos de búsqueda
         btn.click(
             search_handler,
@@ -461,6 +493,12 @@ def create_cards_interface():
             search_handler,
             inputs=[query, num_results, filter_type, filter_location, min_score],
             outputs=[results, status]
+        )
+        
+        # Evento para limpiar filtros
+        clear_btn.click(
+            clear_filters,
+            outputs=[num_results, filter_type, filter_location, min_score, results, status]
         )
     
     return app
