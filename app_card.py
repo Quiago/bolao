@@ -60,21 +60,21 @@ def search_products_cards(
         # Generar embedding de la consulta
         query_vector = model.encode(query).tolist()
         
-        # Construir filtros múltiples
-        filter_dict = {}
+        # Construir filtros múltiples - Pinecone requiere $and en el nivel superior
+        filters = []
         
         if filter_type and filter_type != "Todos":
-            filter_dict["type"] = {"$eq": filter_type}
+            filters.append({"type": {"$eq": filter_type}})
             
         if filter_location and filter_location != "Todas":
-            filter_dict["location"] = {"$eq": filter_location}
+            filters.append({"location": {"$eq": filter_location}})
         
-        # Si hay múltiples filtros, usar $and
-        if len(filter_dict) > 1:
-            filter_dict = {"$and": [{k: v} for k, v in filter_dict.items()]}
-        elif len(filter_dict) == 1:
-            # Si solo hay un filtro, usar directamente
-            filter_dict = list(filter_dict.values())[0]
+        # Usar $and siempre que haya filtros
+        if filters:
+            if len(filters) == 1:
+                filter_dict = filters[0]
+            else:
+                filter_dict = {"$and": filters}
         else:
             filter_dict = None
         
@@ -266,7 +266,7 @@ def create_cards_interface():
     }
     .search-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 40px 20px 30px 20px;
+        padding: 40px 20px 40px 20px;
         border-radius: 0 0 24px 24px;
         margin: -20px -20px 20px -20px;
     }
@@ -285,21 +285,32 @@ def create_cards_interface():
     .filter-section {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        padding: 16px;
+        padding: 24px 24px 60px 24px;
         margin-top: 20px;
+        margin-bottom: 40px;
         backdrop-filter: blur(10px);
+        min-height: 200px;
     }
     .gr-form {
         background: transparent !important;
     }
     .gr-input-label {
         color: white !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        margin-bottom: 8px !important;
     }
-    .gr-dropdown {
-        background: white !important;
+    
+    /* Asegurar que los dropdowns no se superpongan */
+    .dropdown-row {
+        margin-bottom: 40px !important;
+        padding-bottom: 20px !important;
     }
+    
+    .slider-row {
+        margin-top: 30px !important;
+    }
+    
     .gr-slider .gr-slider-container {
         background: rgba(255, 255, 255, 0.2) !important;
     }
@@ -309,6 +320,15 @@ def create_cards_interface():
         font-weight: 500;
         margin: 16px 0;
     }
+    
+    /* Forzar layout normal para dropdowns */
+    .gr-dropdown {
+        position: static !important;
+    }
+    
+    .gr-dropdown > div {
+        position: static !important;
+    }
     """
     
     with gr.Blocks(css=css, theme=gr.themes.Soft()) as app:
@@ -317,11 +337,11 @@ def create_cards_interface():
             gr.Markdown(
                 """<h1 style='text-align: center; color: white; margin: 0 0 8px 0; 
                              font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-                    🔍 Búsqueda Inteligente
+                    🔍 Bolao
                 </h1>
                 <p style='text-align: center; color: rgba(255,255,255,0.9); margin: 0 0 20px 0; 
                          font-size: 16px; font-weight: 400;'>
-                    Encuentra productos con inteligencia artificial
+                    Encuentra productos al instante con nuestra búsqueda inteligente y filtros avanzados
                 </p>""",
                 elem_classes="header"
             )
@@ -338,39 +358,39 @@ def create_cards_interface():
             
             # Filtros en un acordeón elegante
             with gr.Accordion("⚙️ Filtros avanzados", open=False, elem_classes="filter-section"):
+                # Primera fila: Dropdowns (van arriba para que se vean bien)
                 with gr.Row():
-                    with gr.Column(scale=1):
-                        num_results = gr.Slider(
-                            minimum=6,
-                            maximum=50,
-                            value=12,
-                            step=6,
-                            label="📊 Cantidad de resultados",
-                            info="Número de productos a mostrar"
-                        )
-                    with gr.Column(scale=1):
-                        filter_type = gr.Dropdown(
-                            choices=product_types,
-                            value="Todos",
-                            label="🏷️ Tipo de producto",
-                            info="Filtrar por categoría"
-                        )
-                    with gr.Column(scale=1):
-                        filter_location = gr.Dropdown(
-                            choices=locations,
-                            value="Todas",
-                            label="📍 Ubicación",
-                            info="Filtrar por ciudad/zona"
-                        )
-                    with gr.Column(scale=1):
-                        min_score = gr.Slider(
-                            minimum=0.0,
-                            maximum=1.0,
-                            value=0.0,
-                            step=0.05,
-                            label="📈 Relevancia mínima",
-                            info="Score de similitud (0-100%)"
-                        )
+                    filter_type = gr.Dropdown(
+                        choices=product_types,
+                        value="Todos",
+                        label="🏷️ Tipo de producto",
+                        info="Filtrar por categoría"
+                    )
+                    filter_location = gr.Dropdown(
+                        choices=locations,
+                        value="Todas",
+                        label="📍 Ubicación",
+                        info="Filtrar por ciudad/zona"
+                    )
+                
+                # Segunda fila: Sliders (van abajo)
+                with gr.Row():
+                    num_results = gr.Slider(
+                        minimum=6,
+                        maximum=50,
+                        value=12,
+                        step=6,
+                        label="📊 Cantidad de resultados",
+                        info="Número de productos a mostrar"
+                    )
+                    min_score = gr.Slider(
+                        minimum=0.0,
+                        maximum=1.0,
+                        value=0.0,
+                        step=0.05,
+                        label="📈 Relevancia mínima",
+                        info="Score de similitud (0-100%)"
+                    )
         
         # Status
         status = gr.Markdown(elem_classes="status-text")
@@ -397,28 +417,50 @@ def create_cards_interface():
             )
         
         # Información adicional
-        with gr.Accordion("ℹ️ Información", open=False):
+        with gr.Accordion("ℹ️ Guía de uso", open=False):
             gr.Markdown("""
-            ### Cómo usar la búsqueda:
-            - **Busca naturalmente**: Escribe como hablas normalmente
-            - **Usa filtros**: Combina tipo de producto, ubicación y relevancia
-            - **Explora**: Las tarjetas muestran información completa incluyendo redes sociales
-            - **Relevancia**: Porcentajes más altos indican mayor similitud con tu búsqueda
+            ### 🚀 Cómo usar la búsqueda inteligente:
+            
+            **🔍 Búsqueda:**
+            - Escribe de forma natural: "croissant de pistacho", "chocolate premium"
+            - La IA entiende sinónimos y términos relacionados
+            - No necesitas palabras exactas
+            
+            **⚙️ Filtros avanzados:**
+            - **Tipo**: Filtra por categoría específica (dulces, snacks, etc.)
+            - **Ubicación**: Encuentra productos por zona geográfica
+            - **Cantidad**: Ajusta cuántos resultados ver (6-50)
+            - **Relevancia**: Controla la precisión de búsqueda (0-100%)
+            
+            **📊 Entendiendo los resultados:**
+            - **Verde (>80%)**: Muy relevante para tu búsqueda
+            - **Amarillo (60-80%)**: Relevante
+            - **Gris (<60%)**: Menos relevante
+            
+            **🔗 Información en tarjetas:**
+            - Precio y tipo de producto
+            - Nombre del establecimiento y dirección
+            - Redes sociales (cuando están disponibles)
+            - Teléfono y contacto
+            
+            **💡 Tip:** Si no encuentras lo que buscas, prueba con términos más generales o ajusta los filtros
             """)
         
         # Handlers
         def search_handler(query, num_results, filter_type, filter_location, min_score):
+            print(f"🔍 Búsqueda: '{query}' | Tipo: '{filter_type}' | Ubicación: '{filter_location}' | Cantidad: {num_results} | Score: {min_score}")
             return search_products_cards(query, num_results, filter_type, filter_location, min_score)
         
+        # Eventos de búsqueda
         btn.click(
             search_handler,
-            [query, num_results, filter_type, filter_location, min_score],
-            [results, status]
+            inputs=[query, num_results, filter_type, filter_location, min_score],
+            outputs=[results, status]
         )
         query.submit(
             search_handler,
-            [query, num_results, filter_type, filter_location, min_score],
-            [results, status]
+            inputs=[query, num_results, filter_type, filter_location, min_score],
+            outputs=[results, status]
         )
     
     return app
