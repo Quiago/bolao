@@ -266,7 +266,7 @@ def create_cards_interface():
     }
     .search-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 40px 20px 40px 20px;
+        padding: 30px 20px;
         border-radius: 0 0 24px 24px;
         margin: -20px -20px 20px -20px;
     }
@@ -282,35 +282,58 @@ def create_cards_interface():
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
     }
+    .gr-button-secondary {
+        background: rgba(255,255,255,0.9) !important;
+        color: #6b7280 !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        font-weight: 500 !important;
+    }
+    .gr-button-secondary:hover {
+        background: white !important;
+        color: #374151 !important;
+    }
     .filter-section {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        padding: 24px 24px 60px 24px;
-        margin-top: 20px;
-        margin-bottom: 40px;
+        padding: 20px;
+        margin-top: 15px;
+        margin-bottom: 20px;
         backdrop-filter: blur(10px);
-        min-height: 200px;
+        min-height: 180px;
     }
     .gr-form {
         background: transparent !important;
     }
+    /* Alineación específica para dropdowns */
+    .dropdown-container {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 16px !important;
+    }
+    
+    .dropdown-item {
+        flex: 1 !important;
+        min-height: 80px !important;
+    }
+    
+    /* Forzar alineación de labels */
     .gr-input-label {
         color: white !important;
         font-size: 14px !important;
         font-weight: 600 !important;
-        margin-bottom: 8px !important;
+        margin-bottom: 6px !important;
+        height: 20px !important;
+        display: block !important;
     }
     
-    /* Asegurar que los dropdowns no se superpongan */
-    .dropdown-row {
-        margin-bottom: 40px !important;
-        padding-bottom: 20px !important;
+    /* Asegurar mismo tamaño para dropdowns */
+    .gr-dropdown {
+        min-height: 60px !important;
     }
     
-    .slider-row {
-        margin-top: 30px !important;
+    .gr-dropdown > div {
+        min-height: 60px !important;
     }
-    
     .gr-slider .gr-slider-container {
         background: rgba(255, 255, 255, 0.2) !important;
     }
@@ -321,13 +344,28 @@ def create_cards_interface():
         margin: 16px 0;
     }
     
-    /* Forzar layout normal para dropdowns */
-    .gr-dropdown {
-        position: static !important;
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .gradio-container {
+            max-width: 100% !important;
+            padding: 0 10px !important;
+        }
+        .search-container {
+            padding: 20px 15px !important;
+            margin: -10px -10px 15px -10px !important;
+        }
+        .filter-section {
+            padding: 15px !important;
+            margin-top: 10px !important;
+        }
+        .gr-input-label {
+            font-size: 13px !important;
+        }
     }
     
-    .gr-dropdown > div {
-        position: static !important;
+    /* Botones más compactos */
+    .button-row {
+        gap: 10px !important;
     }
     """
     
@@ -337,11 +375,11 @@ def create_cards_interface():
             gr.Markdown(
                 """<h1 style='text-align: center; color: white; margin: 0 0 8px 0; 
                              font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-                    🔍 BOLAO APP
+                    🔍 BOLAO
                 </h1>
                 <p style='text-align: center; color: rgba(255,255,255,0.9); margin: 0 0 20px 0; 
                          font-size: 16px; font-weight: 400;'>
-                    Encuentra productos al instante con nuestra búsqueda inteligente
+                    Encuentra productos al instante con nuestra búsqueda inteligente y filtros avanzados
                 </p>""",
                 elem_classes="header"
             )
@@ -352,47 +390,38 @@ def create_cards_interface():
                     show_label=False,
                     container=False,
                     elem_classes="search-box",
-                    scale=5
+                    scale=4
                 )
                 btn = gr.Button("🔍 Buscar", size="lg", scale=1)
+                clear_btn = gr.Button("🗑️ Limpiar", variant="secondary", size="lg", scale=1)
             
-            # Filtros en un acordeón elegante con más espacio
+            # Filtros compactos en acordeón
             with gr.Accordion("⚙️ Filtros avanzados", open=False, elem_classes="filter-section"):
-                # Primera fila: Dropdowns con mucho espacio
-                with gr.Row(elem_classes="dropdown-row"):
-                    with gr.Column():
-                        filter_type = gr.Dropdown(
-                            choices=product_types,
-                            value="Todos",
-                            label="🏷️ Tipo de producto",
-                            info="Filtrar por categoría"
-                        )
-                    with gr.Column():
-                        filter_location = gr.Dropdown(
-                            choices=locations,
-                            value="Todas",
-                            label="📍 Ubicación",
-                            info="Filtrar por ciudad/zona"
-                        )
-                
-                # Espaciador visual
-                gr.HTML("<div style='height: 20px;'></div>")
-                
-                # Botón para limpiar filtros
+                # Dropdowns - cada uno en su propia fila para alineación perfecta
                 with gr.Row():
-                    with gr.Column(scale=2):
-                        gr.HTML("")  # Espaciador
-                    with gr.Column(scale=1):
-                        clear_btn = gr.Button("🗑️ Limpiar filtros", variant="secondary", size="sm")
-                    with gr.Column(scale=2):
-                        gr.HTML("")  # Espaciador
+                    filter_type = gr.Dropdown(
+                        choices=product_types,
+                        value="Todos",
+                        label="🏷️ Tipo de producto",
+                        info="Filtrar por categoría",
+                        container=True
+                    )
                 
-                # Espaciador visual
+                with gr.Row():
+                    filter_location = gr.Dropdown(
+                        choices=locations,
+                        value="Todas",
+                        label="📍 Ubicación", 
+                        info="Filtrar por ciudad/zona",
+                        container=True
+                    )
+                
+                # Espaciador pequeño
                 gr.HTML("<div style='height: 10px;'></div>")
                 
-                # Segunda fila: Sliders con separación
-                with gr.Row(elem_classes="slider-row"):
-                    with gr.Column():
+                # Sliders en una fila
+                with gr.Row():
+                    with gr.Column(scale=1):
                         num_results = gr.Slider(
                             minimum=6,
                             maximum=50,
@@ -401,7 +430,7 @@ def create_cards_interface():
                             label="📊 Cantidad de resultados",
                             info="Número de productos a mostrar"
                         )
-                    with gr.Column():
+                    with gr.Column(scale=1):
                         min_score = gr.Slider(
                             minimum=0.0,
                             maximum=1.0,
@@ -411,62 +440,47 @@ def create_cards_interface():
                             info="Score de similitud (0-100%)"
                         )
         
-        # Espacio adicional después de filtros
-        gr.HTML("<div style='height: 30px;'></div>")
-        
         # Status
         status = gr.Markdown(elem_classes="status-text")
         
         # Resultados en cards
         results = gr.HTML(label="", show_label=False)
         
-        # Sugerencias
+        # Sugerencias compactas
         with gr.Row():
             gr.Examples(
                 [
                     ["croissant de pistacho"],
-                    ["chocolate premium artesanal"],
+                    ["chocolate premium"],
                     ["postre sin gluten"],
-                    ["snack saludable orgánico"],
-                    ["dulce tradicional casero"],
-                    ["regalo gourmet especial"],
-                    ["café de especialidad"],
-                    ["torta de cumpleaños"]
+                    ["snack saludable"],
+                    ["dulce tradicional"],
+                    ["café especial"]
                 ],
                 inputs=query,
-                examples_per_page=8,
+                examples_per_page=6,
                 label="💡 Prueba buscar:"
             )
         
-        # Información adicional
+        # Información adicional compacta
         with gr.Accordion("ℹ️ Guía de uso", open=False):
             gr.Markdown("""
-            ### 🚀 Cómo usar la búsqueda inteligente:
+            **🔍 Búsqueda inteligente:**
+            Escribe naturalmente - la IA entiende sinónimos y términos relacionados.
             
-            **🔍 Búsqueda:**
-            - Escribe de forma natural: "croissant de pistacho", "chocolate premium"
-            - La IA entiende sinónimos y términos relacionados
-            - No necesitas palabras exactas
+            **⚙️ Filtros:** Combina tipo, ubicación, cantidad y relevancia para refinar resultados.
             
-            **⚙️ Filtros avanzados:**
-            - **Tipo**: Filtra por categoría específica (dulces, snacks, etc.)
-            - **Ubicación**: Encuentra productos por zona geográfica
-            - **Cantidad**: Ajusta cuántos resultados ver (6-50)
-            - **Relevancia**: Controla la precisión de búsqueda (0-100%)
+            **📊 Relevancia:** Verde (>80%) = muy relevante, Amarillo (60-80%) = relevante, Gris (<60%) = menos relevante.
             
-            **📊 Entendiendo los resultados:**
-            - **Verde (>80%)**: Muy relevante para tu búsqueda
-            - **Amarillo (60-80%)**: Relevante
-            - **Gris (<60%)**: Menos relevante
-            
-            **🔗 Información en tarjetas:**
-            - Precio y tipo de producto
-            - Nombre del establecimiento y dirección
-            - Redes sociales (cuando están disponibles)
-            - Teléfono y contacto
-            
-            **💡 Tip:** Si no encuentras lo que buscas, prueba con términos más generales o ajusta los filtros
+            **🔗 Tarjetas:** Muestran precio, establecimiento, dirección y redes sociales cuando están disponibles.
             """)
+        
+        # Footer compacto
+        gr.Markdown("""
+        <div style='text-align: center; color: #9ca3af; font-size: 11px; margin-top: 20px; padding: 15px;'>
+            🤖 Búsqueda inteligente powered by AI
+        </div>
+        """)
         
         # Handlers
         def search_handler(query, num_results, filter_type, filter_location, min_score):
@@ -475,9 +489,9 @@ def create_cards_interface():
         
         def clear_filters():
             return (
-                12,  # num_results
                 "Todos",  # filter_type
                 "Todas",  # filter_location
+                12,  # num_results
                 0.0,  # min_score
                 "",  # results
                 "🔄 Filtros limpiados. ¡Haz una nueva búsqueda!"  # status
@@ -498,7 +512,7 @@ def create_cards_interface():
         # Evento para limpiar filtros
         clear_btn.click(
             clear_filters,
-            outputs=[num_results, filter_type, filter_location, min_score, results, status]
+            outputs=[filter_type, filter_location, num_results, min_score, results, status]
         )
     
     return app
